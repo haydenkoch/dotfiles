@@ -1,0 +1,90 @@
+# ~/.config/ghostty/config
+# Ghostty — tmux + Aerospace, Dracula, Fira Code
+
+# ── Font ──────────────────────────────────────────────
+font-family = FiraCode Nerd Font
+font-size = 1
+font-thicken = true
+adjust-cell-height = 2
+font-feature = calt
+font-feature = liga
+
+# ── Theme ─────────────────────────────────────────────
+theme = dracula
+background-opacity = 0.92
+background-blur-radius = 20
+minimum-contrast = 1.1
+
+# ── Window ────────────────────────────────────────────
+# Tabs integrated into titlebar (requires window-decoration = true)
+macos-titlebar-style = tabs
+window-decoration = true
+macos-titlebar-proxy-icon = hidden
+
+window-padding-x = 10
+window-padding-y = 6
+window-padding-balance = true
+window-padding-color = extend
+window-height = 35
+window-width = 120
+window-save-state = always
+
+# New tabs inherit working directory
+window-inherit-working-directory = true
+
+# ── Cursor ────────────────────────────────────────────
+cursor-style = block
+cursor-style-blink = false
+shell-integration-features = no-cursor
+
+# ── macOS ─────────────────────────────────────────────
+macos-option-as-alt = true
+
+# ── Input ─────────────────────────────────────────────
+mouse-hide-while-typing = true
+
+# ── Clipboard ─────────────────────────────────────────
+copy-on-select = clipboard
+clipboard-paste-protection = false
+
+# ── Scrollback ────────────────────────────────────────
+scrollback-limit = 100000
+
+# ── Behavior ──────────────────────────────────────────
+confirm-close-surface = false
+
+# ── Keybinds: Ghostty tabs ───────────────────────────
+keybind = super+t=new_tab
+keybind = super+w=close_surface
+keybind = super+shift+left_bracket=previous_tab
+keybind = super+shift+right_bracket=next_tab
+keybind = super+one=goto_tab:1
+keybind = super+two=goto_tab:2
+keybind = super+three=goto_tab:3
+keybind = super+four=goto_tab:4
+keybind = super+five=goto_tab:5
+
+# ── Keybinds: Font ───────────────────────────────────
+keybind = super+plus=increase_font_size:1
+keybind = super+minus=decrease_font_size:1
+keybind = super+zero=reset_font_size
+
+# ── Keybinds: Window ─────────────────────────────────
+keybind = super+n=new_window
+keybind = super+shift+comma=reload_config
+
+# ── Keybinds: tmux passthrough ───────────────────────
+# Ctrl-b is tmux default prefix (\x02)
+#
+# Cmd+D  = tmux vertical split   (prefix + %)
+keybind = super+d=text:\x02\x25
+# Cmd+Shift+D = tmux horizontal split (prefix + ")
+keybind = super+shift+d=text:\x02\x22
+# Cmd+Shift+Enter = tmux zoom current pane (prefix + z)
+keybind = super+shift+enter=text:\x02\x7a
+# Cmd+[ = tmux previous window (prefix + p)
+keybind = super+left_bracket=text:\x02\x70
+# Cmd+] = tmux next window (prefix + n)
+keybind = super+right_bracket=text:\x02\x6e
+# Cmd+K = tmux scroll / copy mode (prefix + [)
+keybind = super+k=text:\x02\x5b
