@@ -1,45 +1,53 @@
-# ----------------------------
-# System Settings
-# ----------------------------
+# ── System ────────────────────────────────────────────
 unset MAILCHECK
-stty -ixon  # disable Ctrl+S terminal freeze
+stty -ixon
+setopt INTERACTIVE_COMMENTS
 
-# ----------------------------
-# PATH & ENV
-# ----------------------------
-export PATH="$HOME/.volta/bin:$PATH"
-
-export FZF_DEFAULT_OPTS=" \
---color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
---color=fg:#CDD6F4,header:#F38BA8,info:#CBA6F7,pointer:#F5E0DC \
---color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
---color=selected-bg:#45475A \
---color=border:#313244,label:#CDD6F4"
-
+# ── Editor & Pager ────────────────────────────────────
 export EDITOR="nvim"
 export PAGER="less"
 
-# ----------------------------
-# Shell Prompt & Tools
-# ----------------------------
-eval "$(starship init zsh)"
-eval "$(zoxide init zsh)"
-eval "$(thefuck --alias)"
+# ── SOPS ──────────────────────────────────────────────
+export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
 
-# ----------------------------
-# FZF Keybindings
-# ----------------------------
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# ── PATH ──────────────────────────────────────────────
+export PNPM_HOME="/Users/hayden/Library/pnpm"
+export BUN_INSTALL="$HOME/.bun"
+path=(
+  $PNPM_HOME
+  $BUN_INSTALL/bin
+  $path
+)
+typeset -U path
 
-# ----------------------------
-# Zsh Plugins
-# ----------------------------
+# ── Mise (replaces pyenv, nvm, volta) ─────────────────
+source ~/.cache/zsh/mise.zsh
+
+# ── Shell Prompt ──────────────────────────────────────
+source ~/.cache/zsh/starship.zsh
+
+# ── Zoxide (smart cd) ────────────────────────────────
+source ~/.cache/zsh/zoxide.zsh
+
+# ── FZF ───────────────────────────────────────────────
+source ~/.cache/zsh/fzf.zsh
+export FZF_DEFAULT_OPTS=" \
+--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 \
+--color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 \
+--color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 \
+--color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4 \
+--height=40% --layout=reverse --border=rounded"
+
+# ── Bun completions ──────────────────────────────────
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+# ── Zsh Plugins ───────────────────────────────────────
 source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh  # must be last plugin
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
-# ----------------------------
-# Aliases
-# ----------------------------
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
+# ── Aliases ───────────────────────────────────────────
 alias cd='z'
 alias zi='cd "$(zoxide query -i)"'
 alias ls='eza --icons --group-directories-first'
@@ -51,29 +59,15 @@ alias -- -='cd -'
 alias reload='source ~/.zshrc'
 alias ps='procs'
 alias du='dust'
-alias curl='httpie'
+alias vim='nvim'
+alias vi='nvim'
+alias lg='lazygit'
+alias ld='lazydocker'
+alias cat='bat'
+alias regen='mise activate zsh > ~/.cache/zsh/mise.zsh && starship init zsh > ~/.cache/zsh/starship.zsh && zoxide init zsh > ~/.cache/zsh/zoxide.zsh && fzf --zsh > ~/.cache/zsh/fzf.zsh && echo "✅ cache rebuilt"'
 
-# ----------------------------
-# Simple Terminal Welcome
-# ----------------------------
-if [ -t 1 ]; then
-  figlet -f slant "Hayden's Shell" | lolcat
-
-  if command -v gshuf &> /dev/null; then
-    RANDOM_COW=$(cowsay -l | tail -n +2 | tr ' ' '\n' | gshuf -n1)
-  else
-    RANDOM_COW="default"
-  fi
-
-  fortune -s | cowsay -f "$RANDOM_COW" | lolcat
-fi
-
-# ----------------------------
-# Auto-launch Zellij
-# ----------------------------
-if [ -z "$ZELLIJ" ] && [ -t 1 ]; then
-  zellij
-  exit
-fi
+# --- Dracula theme for Docker BuildKit ---$
+export BUILDKIT_COLORS="run=189,147,249:cancel=241,250,140:error=255,85,85:warning=241,250,140"
 
 
+[[ -f ~/.inshellisense/init/zsh/init.zsh ]] && source ~/.inshellisense/init/zsh/init.zsh
