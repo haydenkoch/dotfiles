@@ -1,0 +1,79 @@
+# ----------------------------
+# System Settings
+# ----------------------------
+unset MAILCHECK
+stty -ixon  # disable Ctrl+S terminal freeze
+
+# ----------------------------
+# PATH & ENV
+# ----------------------------
+export PATH="$HOME/.volta/bin:$PATH"
+
+export FZF_DEFAULT_OPTS=" \
+--color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
+--color=fg:#CDD6F4,header:#F38BA8,info:#CBA6F7,pointer:#F5E0DC \
+--color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
+--color=selected-bg:#45475A \
+--color=border:#313244,label:#CDD6F4"
+
+export EDITOR="nvim"
+export PAGER="less"
+
+# ----------------------------
+# Shell Prompt & Tools
+# ----------------------------
+eval "$(starship init zsh)"
+eval "$(zoxide init zsh)"
+eval "$(thefuck --alias)"
+
+# ----------------------------
+# FZF Keybindings
+# ----------------------------
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# ----------------------------
+# Zsh Plugins
+# ----------------------------
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh  # must be last plugin
+
+# ----------------------------
+# Aliases
+# ----------------------------
+alias cd='z'
+alias zi='cd "$(zoxide query -i)"'
+alias ls='eza --icons --group-directories-first'
+alias ll='ls -lah'
+alias la='ls -la'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias -- -='cd -'
+alias reload='source ~/.zshrc'
+alias ps='procs'
+alias du='dust'
+alias curl='httpie'
+
+# ----------------------------
+# Simple Terminal Welcome
+# ----------------------------
+if [ -t 1 ]; then
+  figlet -f slant "Hayden's Shell" | lolcat
+
+  if command -v gshuf &> /dev/null; then
+    RANDOM_COW=$(cowsay -l | tail -n +2 | tr ' ' '\n' | gshuf -n1)
+  else
+    RANDOM_COW="default"
+  fi
+
+  fortune -s | cowsay -f "$RANDOM_COW" | lolcat
+fi
+
+# ----------------------------
+# Auto-launch Zellij
+# ----------------------------
+if [ -z "$ZELLIJ" ] && [ -t 1 ]; then
+  zellij
+  exit
+fi
+
+
