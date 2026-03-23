@@ -3,11 +3,12 @@
 
 # ── Font ──────────────────────────────────────────────
 font-family = FiraCode Nerd Font
-font-size = 1
+font-size = 12
 font-thicken = true
 adjust-cell-height = 2
 font-feature = calt
 font-feature = liga
+grapheme-width-method = unicode
 
 # ── Theme ─────────────────────────────────────────────
 theme = dracula
