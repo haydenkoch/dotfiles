@@ -1,7 +1,4 @@
-tap "anomalyco/tap"
 tap "catppuccin/tap"
-tap "esolitos/ipa"
-tap "freecad/freecad"
 tap "nikitabobko/tap"
 tap "romkatv/gitstatus"
 brew "act"
