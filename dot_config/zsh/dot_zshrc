@@ -1,0 +1,401 @@
+# ╔══════════════════════════════════════════════════════╗
+# ║  ~/.config/zsh/.zshrc — Hayden's shell config       ║
+# ╚══════════════════════════════════════════════════════╝
+
+# ── Dracula palette ───────────────────────────────────
+typeset -g C_FG="#f8f8f2"
+typeset -g C_BG="#282a36"
+typeset -g C_PURPLE="#bd93f9"
+typeset -g C_PINK="#ff79c6"
+typeset -g C_GREEN="#50fa7b"
+typeset -g C_RED="#ff5555"
+typeset -g C_YELLOW="#f1fa8c"
+typeset -g C_ORANGE="#ffb86c"
+typeset -g C_CYAN="#8be9fd"
+typeset -g C_COMMENT="#6272a4"
+
+# ── Shell options ─────────────────────────────────────
+MAILCHECK=0
+unsetopt FLOW_CONTROL
+setopt INTERACTIVE_COMMENTS PROMPT_SUBST
+setopt AUTO_CD AUTO_PUSHD PUSHD_SILENT CDABLE_VARS
+setopt EXTENDED_GLOB
+setopt NO_CLOBBER NO_RM_STAR_SILENT
+
+# ── History ───────────────────────────────────────────
+HISTFILE="${ZDOTDIR}/history"
+HISTSIZE=100000
+SAVEHIST=100000
+setopt APPEND_HISTORY SHARE_HISTORY EXTENDED_HISTORY
+unsetopt INC_APPEND_HISTORY
+setopt HIST_IGNORE_ALL_DUPS HIST_FIND_NO_DUPS HIST_SAVE_NO_DUPS
+setopt HIST_IGNORE_SPACE HIST_REDUCE_BLANKS HIST_EXPIRE_DUPS_FIRST
+
+# ── Environment ───────────────────────────────────────
+export EDITOR="nvim"
+export PAGER="less"
+export LESS="-FR"
+export LESSHISTFILE=-
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+export PNPM_HOME="${HOME}/Library/pnpm"
+export BUN_INSTALL="${HOME}/.bun"
+export BUILDKIT_COLORS="run=189,147,249:cancel=241,250,140:error=255,85,85:warning=241,250,140"
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_DEFAULT_OPTS="--color=fg:${C_FG},bg:${C_BG},hl:${C_PURPLE} --color=fg+:${C_FG},bg+:#44475a,hl+:${C_PURPLE} --color=info:${C_ORANGE},prompt:${C_GREEN},pointer:${C_PINK} --color=marker:${C_PINK},spinner:${C_ORANGE},header:${C_COMMENT}"
+
+# ── PATH ──────────────────────────────────────────────
+path=(
+  "${HOME}/.local/bin"
+  "${PNPM_HOME}"
+  "${BUN_INSTALL}/bin"
+  $path
+)
+typeset -U path
+
+# ── Modules ───────────────────────────────────────────
+zmodload zsh/datetime
+zmodload zsh/stat
+autoload -Uz add-zsh-hook
+
+# ── Directory bookmarks ──────────────────────────────
+hash -d code="${HOME}/code"
+hash -d dots="${HOME}/dotfiles"
+hash -d dl="${HOME}/Downloads"
+hash -d tmp="${${TMPDIR:-/tmp}%/}/workspaces"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  PROMPT
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# -- state variables (set by hooks, read by prompt) ----
+typeset -g _prompt_dir_icon=""
+typeset -g _prompt_ctx=""
+typeset -g _prompt_ctx_pwd=""
+typeset -g _prompt_git=""
+typeset -g _prompt_timer=""
+typeset -g _prompt_exit=""
+typeset -g _prompt_ssh=""
+typeset -g _prompt_ssh_set=""
+typeset -g _prompt_venv=""
+typeset -g _in_git_repo=0
+typeset -g _repo_check_pwd=""
+
+# -- project detection (external, first match wins) ───
+source "${ZDOTDIR}/project-icons.zsh"
+
+function _prompt_update_ctx() {
+  [[ "$PWD" == "$_prompt_ctx_pwd" ]] && return
+  _prompt_ctx_pwd="$PWD"
+  _prompt_ctx=""
+
+  local rule file icon color
+  for rule in "${_project_rules[@]}"; do
+    file="${rule%%|*}"
+    icon="${${rule#*|}%%|*}"
+    color="${rule##*|}"
+    if [[ "$file" == \** ]]; then
+      local -a found=( ${~file}(N) )
+      (( ${#found} )) && {
+        _prompt_ctx=" %F{${color}}${icon}%f"
+        return
+      }
+    elif [[ -f "$file" ]]; then
+      _prompt_ctx=" %F{${color}}${icon}%f"
+      return
+    fi
+  done
+}
+
+# -- chpwd: runs on directory change only ─────────────
+function _prompt_update_dir_icon() {
+  if [[ "$PWD" == "$HOME" ]]; then
+    _prompt_dir_icon="%F{cyan}󰋜%f "
+  elif [[ "$PWD" == "${${TMPDIR:-/tmp}%/}/workspaces"* ]]; then
+    _prompt_dir_icon="%F{yellow}󰪺%f "
+  else
+    _prompt_dir_icon="%F{cyan}󰉋%f "
+  fi
+}
+
+function _prompt_update_repo_state() {
+  [[ "$PWD" == "$_repo_check_pwd" ]] && return
+  _repo_check_pwd="$PWD"
+  command git rev-parse --is-inside-work-tree &>/dev/null
+  (( $? == 0 )) && _in_git_repo=1 || _in_git_repo=0
+}
+
+function _prompt_chpwd() {
+  _prompt_update_dir_icon
+  _prompt_update_ctx
+  _prompt_update_repo_state
+}
+
+add-zsh-hook chpwd _prompt_chpwd
+_prompt_chpwd
+
+# -- preexec: runs before each command ─────────────────
+function _prompt_preexec() {
+  _cmd_start=$EPOCHREALTIME
+  print -Pn "\e]0;$1\a"
+}
+
+# -- precmd: runs before each prompt ──────────────────
+function _prompt_precmd() {
+  local last_exit=$?
+  print -Pn "\e]0;%3~\a"
+
+  # git
+  _prompt_git=""
+  if (( _in_git_repo )) && gitstatus_query -t 10 MY 2>/dev/null && [[ "$VCS_STATUS_RESULT" == ok-sync ]]; then
+    local branch="${VCS_STATUS_LOCAL_BRANCH:-${VCS_STATUS_COMMIT[1,8]}}"
+    local dirty=""
+    local s=$VCS_STATUS_NUM_STAGED
+    local u=$VCS_STATUS_NUM_UNSTAGED
+    local t=$VCS_STATUS_NUM_UNTRACKED
+    local a=$VCS_STATUS_NUM_COMMITS_AHEAD
+    local b=$VCS_STATUS_NUM_COMMITS_BEHIND
+    local c=$VCS_STATUS_NUM_CONFLICTED
+
+    (( s )) && dirty+=" %F{green}󰸞${s}%f"
+    (( u )) && dirty+=" %F{yellow}󰏫${u}%f"
+    (( t )) && dirty+=" %F{cyan}󰐕${t}%f"
+    (( a )) && dirty+=" %F{green}⇡${a}%f"
+    (( b )) && dirty+=" %F{red}⇣${b}%f"
+    (( c )) && dirty+=" %F{red}󱐋${c}%f"
+
+    _prompt_git=" %F{magenta} ${branch}%f${dirty}"
+  fi
+
+  # timer
+  _prompt_timer=""
+  if [[ -n $_cmd_start ]]; then
+    local elapsed=$(( EPOCHREALTIME - _cmd_start ))
+    if (( elapsed >= 3 )); then
+      printf -v _prompt_timer "%%F{yellow}󱎫 %.1fs%%f" "$elapsed"
+    fi
+    unset _cmd_start
+  fi
+
+  # exit code
+  _prompt_exit=""
+  (( last_exit )) && _prompt_exit="%F{red} ${last_exit}%f"
+
+  # ssh (compute once per session)
+  if [[ -z $_prompt_ssh_set ]]; then
+    _prompt_ssh_set=1
+    _prompt_ssh=""
+    [[ -n "$SSH_CONNECTION" ]] && _prompt_ssh="%F{yellow}󰣀 %n@%m%f "
+  fi
+
+  # python venv
+  _prompt_venv=""
+  [[ -n "$VIRTUAL_ENV" ]] && _prompt_venv="%F{cyan}󰌠 ${VIRTUAL_ENV:t}%f "
+}
+
+add-zsh-hook preexec _prompt_preexec
+add-zsh-hook precmd  _prompt_precmd
+
+# -- prompt strings ───────────────────────────────────
+PROMPT='${_prompt_venv}${_prompt_ssh}${_prompt_dir_icon}%F{magenta}%3~%f${_prompt_ctx}${_prompt_git}%(1j. %F{white}󰜎 %j%f.)
+%(?.%F{green}❯%f.%F{red}✘%f) '
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  KEY BINDINGS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+bindkey '^[[A' history-beginning-search-backward
+bindkey '^[[B' history-beginning-search-forward
+bindkey '^A'   beginning-of-line
+bindkey '^E'   end-of-line
+bindkey '^W'   backward-kill-word
+bindkey '^[b'  backward-word
+bindkey '^[f'  forward-word
+bindkey '^[d'  kill-word
+bindkey '^L'   clear-screen
+
+# ctrl+z: toggle suspend/resume
+function _toggle_fg() {
+  if [[ $#BUFFER -eq 0 ]]; then
+    BUFFER="fg"
+    zle accept-line
+  else
+    zle push-input
+    zle clear-screen
+  fi
+}
+zle -N _toggle_fg
+bindkey '^Z' _toggle_fg
+
+# ctrl+f: fix last mistyped command
+function _fix_last() {
+  local last="${history[$((HISTCMD-1))]}"
+  [[ -n "$last" ]] || return
+  local first_word="${last%% *}"
+  local rest="${last#"$first_word"}"
+
+  local i swapped
+  for (( i=1; i < ${#first_word}; i++ )); do
+    swapped="${first_word[1,i-1]}${first_word[i+1]}${first_word[i]}${first_word[i+2,-1]}"
+    if (( $+commands[$swapped] )); then
+      BUFFER="${swapped}${rest}"
+      zle accept-line
+      return
+    fi
+  done
+
+  if (( ${#first_word} >= 3 && $+commands[fzf] )); then
+    local fix=$(print -l -- ${(ko)commands} | fzf --filter="$first_word" 2>/dev/null | head -1)
+    [[ -n "$fix" ]] && BUFFER="${fix}${rest}" && zle accept-line
+  fi
+}
+zle -N _fix_last
+bindkey '^F' _fix_last
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  ALIASES
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(( $+commands[eza]        )) && alias ls='eza --icons --group-directories-first'
+(( $+commands[zoxide]     )) && alias zi='cd "$(zoxide query -i)"'
+(( $+commands[procs]      )) && alias ps='procs'
+(( $+commands[dust]       )) && alias du='dust'
+(( $+commands[nvim]       )) && alias vim='nvim'
+(( $+commands[nvim]       )) && alias vi='nvim'
+(( $+commands[lazygit]    )) && alias lg='lazygit'
+(( $+commands[lazydocker] )) && alias ld='lazydocker'
+(( $+commands[bat]        )) && alias cat='bat --paging=never'
+alias ll='ls -lah'
+alias la='ls -la'
+alias reload='exec zsh'
+alias d='dirs -v | head -20'
+alias -- -='cd -'
+for i ({1..9}) alias "$i"="cd +$i"; unset i
+
+function brew() {
+  command brew "$@"
+  case "$1" in
+    install|uninstall|remove|reinstall|upgrade)
+      command brew bundle dump --force --file="${HOME}/.config/Brewfile"
+      print -P "%F{green}✓%f Brewfile updated" >&2
+      ;;
+  esac
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  COMMAND NOT FOUND
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+typeset -A _missing_cmd_hints=(
+  rg  'brew install ripgrep'
+  fd  'brew install fd'
+  bat 'brew install bat'
+  eza 'brew install eza'
+  fzf 'brew install fzf'
+)
+
+function command_not_found_handler() {
+  local cmd="$1"
+  shift
+  local args="$*"
+
+  print -P "%F{red}zsh:%f command not found: %B${cmd}${args:+ $args}%b" >&2
+
+  if [[ -n "${_missing_cmd_hints[$cmd]}" ]]; then
+    print -P "%F{cyan}Install:%f ${_missing_cmd_hints[$cmd]}" >&2
+    return 127
+  fi
+
+  local i swapped
+  for (( i=1; i < ${#cmd}; i++ )); do
+    swapped="${cmd[1,i-1]}${cmd[i+1]}${cmd[i]}${cmd[i+2,-1]}"
+    if (( $+commands[$swapped] )); then
+      print -P "%F{yellow}Did you mean:%f %F{green}%B${swapped}${args:+ $args}%b%f" >&2
+      return 127
+    fi
+  done
+
+  if (( ${#cmd} >= 3 && $+commands[fzf] )); then
+    local -a matches
+    matches=(${(f)"$(print -l -- ${(ko)commands} | fzf --filter="$cmd" 2>/dev/null | head -5)"})
+    if (( ${#matches[@]} )); then
+      print -P "%F{yellow}Similar:%f" >&2
+      for m in "${matches[@]}"; do
+        print -P "  %F{green}${m}${args:+ $args}%f" >&2
+      done
+    fi
+  fi
+
+  return 127
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  FUNCTIONS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+source "${ZDOTDIR}/tmp.zsh"
+
+function take() {
+  if [[ -z "$1" ]]; then
+    _usage take '<url|directory>' 'git clone + cd, or mkdir + cd'
+    return 1
+  fi
+  if [[ "$1" == http://* || "$1" == https://* || "$1" == *.git ]]; then
+    command git clone --depth 1 "$1" && cd "${${1##*/}%.git}"
+  else
+    mkcd "$1"
+  fi
+}
+
+function port() {
+  if [[ -z "$1" || "$1" == -* ]]; then
+    _usage port '<number>' 'show what is listening on a TCP port'
+    return 1
+  fi
+  command lsof -iTCP:"$1" -sTCP:LISTEN -P -n
+}
+
+function regen() {
+  local -a parts=()
+  (( $+commands[mise]   )) && { mise activate zsh  >| "${ZDOTDIR}/mise.zsh";   parts+="${ZDOTDIR}/mise.zsh" }
+  (( $+commands[zoxide] )) && { zoxide init zsh    >| "${ZDOTDIR}/zoxide.zsh"; parts+="${ZDOTDIR}/zoxide.zsh" }
+  (( $+commands[fzf]    )) && { fzf --zsh          >| "${ZDOTDIR}/fzf.zsh";   parts+="${ZDOTDIR}/fzf.zsh" }
+  (( $+commands[atuin]  )) && { atuin init zsh     >| "${ZDOTDIR}/atuin.zsh"; parts+="${ZDOTDIR}/atuin.zsh" }
+  [[ -f "${HOME}/.bun/_bun" ]] && parts+="${HOME}/.bun/_bun"
+
+  if (( ${#parts} )); then
+    cat "${parts[@]}" >| "${ZDOTDIR}/bundle.zsh"
+  else
+    : >| "${ZDOTDIR}/bundle.zsh"
+  fi
+  zcompile "${ZDOTDIR}/bundle.zsh"
+  zcompile "${ZDOTDIR}/.zshrc"
+
+  echo "✅ cache rebuilt — run 'reload' to apply"
+}
+
+function _maybe_regen() {
+  local zwc="${ZDOTDIR}/bundle.zsh.zwc"
+  [[ -f "$zwc" ]] || { regen; return }
+  local age=$(( EPOCHSECONDS - $(zstat +mtime "$zwc") ))
+  (( age > 604800 )) && regen
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  COMPLETION
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+zstyle ":completion:*" matcher-list "m:{a-z}={A-Z}"
+zstyle ":completion:*" menu select
+zstyle ":completion:*" list-colors "${(s.:.)LS_COLORS}"
+zstyle ":completion:*" group-name ""
+zstyle ":completion:*:descriptions" format "%F{magenta}── %d ──%f"
+zstyle ":completion:*" use-cache on
+zstyle ":completion:*" cache-path "${ZDOTDIR}/compcache"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  DEFERRED (loads after first prompt)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+source "${ZDOTDIR}/plugins/zsh-defer/zsh-defer.plugin.zsh"
+
+zsh-defer source "${ZDOTDIR}/bundle.zsh"
+zsh-defer -c 'source /opt/homebrew/opt/gitstatus/gitstatus.plugin.zsh && gitstatus_start -s -1 -u -1 -c -1 -d -1 MY'
+zsh-defer -c 'autoload -Uz compinit && compinit -C -d "${ZDOTDIR}/zcompdump" && compdef _tmp_completions tmp'
+zsh-defer -c 'source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh; ZSH_AUTOSUGGEST_STRATEGY=(history completion)'
+zsh-defer _maybe_regen
+zsh-defer source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+zsh-defer -c 'RPROMPT='\''${_prompt_exit}${_prompt_timer}'\'
