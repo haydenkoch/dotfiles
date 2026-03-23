@@ -273,7 +273,7 @@ function brew() {
   command brew "$@"
   case "$1" in
     install|uninstall|remove|reinstall|upgrade)
-     command brew bundle dump --force --file="${HOME}/.config/Brewfile"
+      command brew bundle dump --force --file="${HOME}/.Brewfile"
       print -P "%F{green}✓%f Brewfile updated" >&2
       ;;
   esac
