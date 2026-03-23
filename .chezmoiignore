@@ -1,0 +1,4 @@
+.config/zsh/generated/*
+.config/zsh/*.zwc
+.config/zsh/.zcompdump*
+.config/zsh/compcache/*

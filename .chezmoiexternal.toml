@@ -1,0 +1,4 @@
+[".config/zsh/plugins/zsh-defer"]
+  type = "git-repo"
+  url = "https://github.com/romkatv/zsh-defer.git"
+  refreshPeriod = "168h"

@@ -351,27 +351,51 @@ function port() {
 }
 
 function regen() {
+  local GEN="${ZDOTDIR}/generated"
+  mkdir -p "$GEN"
+
   local -a parts=()
-  (( $+commands[mise]   )) && { mise activate zsh  >| "${ZDOTDIR}/mise.zsh";   parts+="${ZDOTDIR}/mise.zsh" }
-  (( $+commands[zoxide] )) && { zoxide init zsh    >| "${ZDOTDIR}/zoxide.zsh"; parts+="${ZDOTDIR}/zoxide.zsh" }
-  (( $+commands[fzf]    )) && { fzf --zsh          >| "${ZDOTDIR}/fzf.zsh";   parts+="${ZDOTDIR}/fzf.zsh" }
-  (( $+commands[atuin]  )) && { atuin init zsh     >| "${ZDOTDIR}/atuin.zsh"; parts+="${ZDOTDIR}/atuin.zsh" }
-  [[ -f "${HOME}/.bun/_bun" ]] && parts+="${HOME}/.bun/_bun"
+
+  (( $+commands[mise] )) && {
+    mise activate zsh >| "${GEN}/mise.zsh"
+    parts+=("${GEN}/mise.zsh")
+  }
+
+  (( $+commands[zoxide] )) && {
+    zoxide init zsh >| "${GEN}/zoxide.zsh"
+    parts+=("${GEN}/zoxide.zsh")
+  }
+
+  (( $+commands[fzf] )) && {
+    fzf --zsh >| "${GEN}/fzf.zsh"
+    parts+=("${GEN}/fzf.zsh")
+  }
+
+  (( $+commands[atuin] )) && {
+    atuin init zsh >| "${GEN}/atuin.zsh"
+    parts+=("${GEN}/atuin.zsh")
+  }
+
+  [[ -f "${HOME}/.bun/_bun" ]] && parts+=("${HOME}/.bun/_bun")
 
   if (( ${#parts} )); then
-    cat "${parts[@]}" >| "${ZDOTDIR}/bundle.zsh"
+    cat "${parts[@]}" >| "${GEN}/bundle.zsh"
   else
-    : >| "${ZDOTDIR}/bundle.zsh"
+    : >| "${GEN}/bundle.zsh"
   fi
-  zcompile "${ZDOTDIR}/bundle.zsh"
+
+  zcompile "${GEN}/bundle.zsh"
   zcompile "${ZDOTDIR}/.zshrc"
 
-  echo "✅ cache rebuilt — run 'reload' to apply"
+  echo "✅ cache rebuilt — run 'reload'"
 }
 
 function _maybe_regen() {
-  local zwc="${ZDOTDIR}/bundle.zsh.zwc"
+  local GEN="${ZDOTDIR}/generated"
+  local zwc="${GEN}/bundle.zsh.zwc"
+
   [[ -f "$zwc" ]] || { regen; return }
+
   local age=$(( EPOCHSECONDS - $(zstat +mtime "$zwc") ))
   (( age > 604800 )) && regen
 }
@@ -392,7 +416,7 @@ zstyle ":completion:*" cache-path "${ZDOTDIR}/compcache"
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 source "${ZDOTDIR}/plugins/zsh-defer/zsh-defer.plugin.zsh"
 
-zsh-defer source "${ZDOTDIR}/bundle.zsh"
+zsh-defer source "${ZDOTDIR}/generated/bundle.zsh"
 zsh-defer -c 'source /opt/homebrew/opt/gitstatus/gitstatus.plugin.zsh && gitstatus_start -s -1 -u -1 -c -1 -d -1 MY'
 zsh-defer -c 'autoload -Uz compinit && compinit -C -d "${ZDOTDIR}/zcompdump" && compdef _tmp_completions tmp'
 zsh-defer -c 'source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh; ZSH_AUTOSUGGEST_STRATEGY=(history completion)'
