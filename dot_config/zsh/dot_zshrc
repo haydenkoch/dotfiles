@@ -273,7 +273,7 @@ function brew() {
   command brew "$@"
   case "$1" in
     install|uninstall|remove|reinstall|upgrade)
-      command brew bundle dump --force --file="${HOME}/.config/Brewfile"
+     command brew bundle dump --force --file="${HOME}/.config/Brewfile"
       print -P "%F{green}✓%f Brewfile updated" >&2
       ;;
   esac
@@ -410,6 +410,8 @@ zstyle ":completion:*" group-name ""
 zstyle ":completion:*:descriptions" format "%F{magenta}── %d ──%f"
 zstyle ":completion:*" use-cache on
 zstyle ":completion:*" cache-path "${ZDOTDIR}/compcache"
+
+[[ -d "${ZDOTDIR}/generated" ]] || mkdir -p "${ZDOTDIR}/generated"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  DEFERRED (loads after first prompt)

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p "${HOME}/.config/zsh/generated"
+
+if command -v brew >/dev/null 2>&1; then
+  brew bundle install --file="${HOME}/.Brewfile" --no-upgrade || true
+fi
+
+if command -v zsh >/dev/null 2>&1; then
+  ZDOTDIR="${HOME}/.config/zsh" zsh -ic 'regen' || true
+fi
