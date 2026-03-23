@@ -1,4 +1,3 @@
-tap "catppuccin/tap"
 tap "nikitabobko/tap"
 tap "romkatv/gitstatus"
 brew "act"
