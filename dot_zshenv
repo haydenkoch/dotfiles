@@ -1,0 +1,11 @@
+export ZDOTDIR="${HOME}/.config/zsh"
+export CARGO_HOME="${HOME}/.config/cargo"
+export RUSTUP_HOME="${HOME}/.config/rustup"
+export BUNDLE_USER_HOME="${HOME}/.config/bundle"
+export DOCKER_CONFIG="${HOME}/.config/docker"
+export NPM_CONFIG_USERCONFIG="${HOME}/.config/npm/npmrc"
+export NPM_CONFIG_CACHE="${HOME}/.config/npm/cache"
+export GNUPGHOME="${HOME}/.config/gnupg"
+export ANSIBLE_HOME="${HOME}/.config/ansible"
+export GEM_HOME="${HOME}/.config/gem"
+typeset -U PATH
