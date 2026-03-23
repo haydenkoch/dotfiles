@@ -8,4 +8,5 @@ export NPM_CONFIG_CACHE="${HOME}/.config/npm/cache"
 export GNUPGHOME="${HOME}/.config/gnupg"
 export ANSIBLE_HOME="${HOME}/.config/ansible"
 export GEM_HOME="${HOME}/.config/gem"
-typeset -U PATH
+typeset -U PATHexport MISE_IGNORED_CONFIG_PATHS="${HOME}/.local/share/chezmoi"
+export MISE_IGNORED_CONFIG_PATHS="${HOME}/.local/share/chezmoi"
