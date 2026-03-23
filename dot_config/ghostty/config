@@ -75,17 +75,17 @@ keybind = super+n=new_window
 keybind = super+shift+comma=reload_config
 
 # ── Keybinds: tmux passthrough ───────────────────────
-# Ctrl-b is tmux default prefix (\x02)
+# Ctrl-a is tmux prefix (\x01) — must match tmux.conf
 #
 # Cmd+D  = tmux vertical split   (prefix + %)
-keybind = super+d=text:\x02\x25
+keybind = super+d=text:\x01\x25
 # Cmd+Shift+D = tmux horizontal split (prefix + ")
-keybind = super+shift+d=text:\x02\x22
+keybind = super+shift+d=text:\x01\x22
 # Cmd+Shift+Enter = tmux zoom current pane (prefix + z)
-keybind = super+shift+enter=text:\x02\x7a
+keybind = super+shift+enter=text:\x01\x7a
 # Cmd+[ = tmux previous window (prefix + p)
-keybind = super+left_bracket=text:\x02\x70
+keybind = super+left_bracket=text:\x01\x70
 # Cmd+] = tmux next window (prefix + n)
-keybind = super+right_bracket=text:\x02\x6e
+keybind = super+right_bracket=text:\x01\x6e
 # Cmd+K = tmux scroll / copy mode (prefix + [)
-keybind = super+k=text:\x02\x5b
+keybind = super+k=text:\x01\x5b
